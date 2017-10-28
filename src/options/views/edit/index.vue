@@ -15,7 +15,7 @@
     <div class="frame-block flex-auto pos-rel">
       <vm-code
         v-show="nav === 'code'" class="abs-full"
-        v-model="code" :commands="commands" @ready="initEditor"
+        v-model="code" :commands="commands"
       />
       <vm-settings
         v-show="nav === 'settings'" class="abs-full"
@@ -83,15 +83,19 @@ export default {
   },
   mounted() {
     const id = objectGet(this.script, 'props.id');
-    (id ? sendMessage({
-      cmd: 'GetScriptCode',
-      data: id,
-    }) : sendMessage({
-      cmd: 'NewScript',
-    }).then(({ script, code }) => {
-      this.script = script;
-      return code;
-    }))
+    (id
+      ? sendMessage({
+        cmd: 'GetScriptCode',
+        data: id,
+      })
+      : sendMessage({
+        cmd: 'NewScript',
+      })
+      .then(({ script, code }) => {
+        this.script = script;
+        return code;
+      })
+    )
     .then(code => {
       this.code = code;
       const settings = {};
@@ -191,9 +195,6 @@ export default {
     },
     saveClose() {
       this.save().then(this.close);
-    },
-    initEditor(cm) {
-      this.cm = cm;
     },
   },
 };

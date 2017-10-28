@@ -13,14 +13,6 @@ msgErrorFetchingScript:
 msgInstalled:
   description: Message shown when a script is installed.
   message: スクリプトがインストールされました。
-Warning:
-  description: Show warnings with a notification.
-  message: 警告
-  touched: false
-msgWarnGrant:
-  description: Message shown when `@grant` is not found in a script.
-  message: スクリプト「$1」には @grant が記述された行がありません!　詳細を見るにはクリックしてください。
-  touched: false
 labelNoName:
   description: Text as the name of a script when no @name is assigned.
   message: 名前なし
@@ -93,10 +85,6 @@ buttonNew:
 buttonUpdateAll:
   description: Check all scripts for updates.
   message: すべての更新を確認
-anchorGetMoreScripts:
-  description: Link to get more scripts.
-  message: スクリプトの入手
-  touched: false
 msgLoading:
   description: Message shown in the options page before script list is loaded.
   message: 読み込み中…
@@ -106,10 +94,6 @@ labelSettings:
 labelAutoUpdate:
   description: Option to allow automatically checking scripts for updates every 24 hours.
   message: スクリプトの更新を自動的に確認する (毎日)
-labelIgnoreGrant:
-  description: Option to suppress no @grant warnings.
-  message: '@grant が存在しない場合の警告を表示しない'
-  touched: false
 labelDataImport:
   description: Section title of data import.
   message: インポート
@@ -156,7 +140,7 @@ anchorTranslator:
   description: Translator shown on about tab.
   message: >-
     <a
-    href="https://www.transifex.com/user/profile/100%E3%81%AE%E4%BA%BA/">100の人</a>
+    href="https://www.transifex.com/user/profile/100%E3%81%AE%E4%BA%BA/">100の人</a>、Takute
 labelCurrentLang:
   description: Label of current language.
   message: '現在の言語: '
@@ -408,13 +392,28 @@ labelNoSearchScripts:
   message: スクリプトは見つかりませんでした。
 buttonHome:
   description: Button to open homepage.
-  message: ''
+  message: ホームページ
 buttonSupport:
   description: Button to open support page.
-  message: ''
+  message: サポート　ページ
 buttonUndo:
   description: Button to undo removement of a script.
-  message: ''
+  message: 戻す
 labelRemoved:
   description: Label shown when a script is removed.
-  message: ''
+  message: 【削除したもの】
+buttonFilter:
+  description: Button to show filters menu.
+  message: 条件指定
+optionShowEnabledFirst:
+  description: Option to show enabled scripts first in alphabetical order.
+  message: 有効にされたスクリプトを先に
+filterExecutionOrder:
+  description: Label for option to sort scripts in execution order.
+  message: 実行順序
+filterAlphabeticalOrder:
+  description: Label for option to sort scripts in alphabetical order.
+  message: アルファベット順序
+labelFilterSort:
+  description: Label for sort filter.
+  message: $1 によって

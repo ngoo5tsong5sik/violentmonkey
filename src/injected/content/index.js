@@ -1,8 +1,13 @@
+import { isFirefox } from 'src/common/ua';
+import { getUniqId } from 'src/common';
 import { bindEvents, sendMessage, inject, attachFunction } from '../utils';
 import bridge from './bridge';
 import { tabOpen, tabClose, tabClosed } from './tabs';
 import { onNotificationCreate, onNotificationClick, onNotificationClose } from './notifications';
 import { getRequestId, httpRequest, abortRequest, httpRequested } from './requests';
+import dirtySetClipboard from './clipboard';
+
+const IS_TOP = window.top === window;
 
 const ids = [];
 const menus = [];
@@ -21,7 +26,7 @@ function getBadge() {
 function setBadge() {
   if (badge.ready && badge.willSet) {
     // XXX: only scripts run in top level window are counted
-    if (top === window) sendMessage({ cmd: 'SetBadge', data: badge.number });
+    if (IS_TOP) sendMessage({ cmd: 'SetBadge', data: badge.number });
   }
 }
 
@@ -33,8 +38,8 @@ const bgHandlers = {
   GetBadge: getBadge,
   HttpRequested: httpRequested,
   TabClosed: tabClosed,
-  UpdateValues(data) {
-    bridge.post({ cmd: 'UpdateValues', data });
+  UpdatedValues(data) {
+    bridge.post({ cmd: 'UpdatedValues', data });
   },
   NotificationClick: onNotificationClick,
   NotificationClose: onNotificationClose,
@@ -49,7 +54,7 @@ export default function initialize(contentId, webId) {
     if (handle) handle(req.data, src);
   });
 
-  sendMessage({ cmd: 'GetInjected', data: location.href })
+  sendMessage({ cmd: 'GetInjected', data: window.location.href })
   .then(data => {
     if (data.scripts) {
       data.scripts.forEach(script => {
@@ -71,23 +76,34 @@ const handlers = {
   Inject: injectScript,
   TabOpen: tabOpen,
   TabClose: tabClose,
-  SetValue(data) {
-    sendMessage({ cmd: 'SetValue', data });
+  UpdateValue(data) {
+    sendMessage({ cmd: 'UpdateValue', data });
   },
   RegisterMenu(data) {
-    if (window.top === window) menus.push(data);
+    if (IS_TOP) menus.push(data);
     getPopup();
   },
-  AddStyle(css) {
+  AddStyle({ css, callbackId }) {
+    let styleId = null;
     if (document.head) {
+      styleId = getUniqId('VMst');
       const style = document.createElement('style');
+      style.id = styleId;
       style.textContent = css;
       document.head.appendChild(style);
     }
+    bridge.post({ cmd: 'Callback', data: { callbackId, payload: styleId } });
   },
   Notification: onNotificationCreate,
   SetClipboard(data) {
-    sendMessage({ cmd: 'SetClipboard', data });
+    if (isFirefox) {
+      // Firefox does not support copy from background page.
+      // ref: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/Interact_with_the_clipboard
+      // The dirty way will create a <textarea> element in web page and change the selection.
+      dirtySetClipboard(data);
+    } else {
+      sendMessage({ cmd: 'SetClipboard', data });
+    }
   },
   CheckScript({ name, namespace, callback }) {
     sendMessage({ cmd: 'CheckScript', data: { name, namespace } })
@@ -104,7 +120,7 @@ function onHandle(req) {
 
 function getPopup() {
   // XXX: only scripts run in top level window are counted
-  if (top === window) {
+  if (IS_TOP) {
     sendMessage({
       cmd: 'SetPopup',
       data: { ids, menus },

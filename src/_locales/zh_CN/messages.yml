@@ -13,14 +13,6 @@ msgErrorFetchingScript:
 msgInstalled:
   description: Message shown when a script is installed.
   message: 脚本已安装。
-Warning:
-  description: Show warnings with a notification.
-  message: 警告
-  touched: false
-msgWarnGrant:
-  description: Message shown when `@grant` is not found in a script.
-  message: 脚本【$1】没有`@grant`行！点击查看更多信息。
-  touched: false
 labelNoName:
   description: Text as the name of a script when no @name is assigned.
   message: 名字为空
@@ -93,10 +85,6 @@ buttonNew:
 buttonUpdateAll:
   description: Check all scripts for updates.
   message: 全部更新
-anchorGetMoreScripts:
-  description: Link to get more scripts.
-  message: 获取更多脚本
-  touched: false
 msgLoading:
   description: Message shown in the options page before script list is loaded.
   message: 加载中 ...
@@ -106,10 +94,6 @@ labelSettings:
 labelAutoUpdate:
   description: Option to allow automatically checking scripts for updates every 24 hours.
   message: 每天自动更新脚本
-labelIgnoreGrant:
-  description: Option to suppress no @grant warnings.
-  message: 不显示缺少@grant的警告
-  touched: false
 labelDataImport:
   description: Section title of data import.
   message: 数据导入
@@ -416,3 +400,18 @@ buttonUndo:
 labelRemoved:
   description: Label shown when a script is removed.
   message: 【已删除】
+buttonFilter:
+  description: Button to show filters menu.
+  message: 筛选
+optionShowEnabledFirst:
+  description: Option to show enabled scripts first in alphabetical order.
+  message: 先显示被启用的脚本
+filterExecutionOrder:
+  description: Label for option to sort scripts in execution order.
+  message: 执行顺序
+filterAlphabeticalOrder:
+  description: Label for option to sort scripts in alphabetical order.
+  message: 字母顺序
+labelFilterSort:
+  description: Label for sort filter.
+  message: 按 $1 排序

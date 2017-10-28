@@ -1,3 +1,4 @@
+const path = require('path');
 const webpack = require('webpack');
 const FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
@@ -46,11 +47,14 @@ targets.push(merge(base, {
     }),
     new HtmlWebpackPlugin({
       filename: 'popup/index.html',
-      template: 'src/public/index.html',
+      template: 'src/popup/index.html',
       chunks: ['browser', 'common', 'popup/app'],
     }),
     // new FriendlyErrorsPlugin(),
     !IS_DEV && new ExtractTextPlugin('[name].css'),
+    new webpack.NormalModuleReplacementPlugin(/\.\/rules\.json$/, resource => {
+      resource.request = path.resolve(__dirname, '../src/resources/empty-rules.json');
+    }),
   ].filter(Boolean),
 }));
 

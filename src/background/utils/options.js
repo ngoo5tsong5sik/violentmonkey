@@ -18,8 +18,11 @@ const defaults = {
   sync: null,
   customCSS: null,
   importSettings: true,
-  notifyUpdates: true,
+  notifyUpdates: false,
   version: null,
+  filters: {
+    sort: 'exec',
+  },
 };
 let changes = {};
 const hooks = initHooks();

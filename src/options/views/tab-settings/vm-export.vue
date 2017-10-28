@@ -14,10 +14,19 @@
       <setting-check name="exportValues" />
       <span v-text="i18n('labelExportScriptData')"></span>
     </label>
+    <vl-modal transition="in-out" :visible="!!store.ffUrl" @close="store.ffUrl = null">
+      <div class="export-modal modal-content">
+        <a download="scripts.zip" :href="store.ffUrl">
+          Right click and save as<br />
+          <strong>scripts.zip</strong>
+        </a>
+      </div>
+    </vl-modal>
   </section>
 </template>
 
 <script>
+import VlModal from 'vueleton/lib/modal';
 import { sendMessage, getLocaleString } from 'src/common';
 import options from 'src/common/options';
 import { isFirefox } from 'src/common/ua';
@@ -28,13 +37,16 @@ import { store } from '../../utils';
  * Note:
  * - Firefox does not support multiline <select>
  */
+if (isFirefox) store.ffUrl = null;
 
 export default {
   components: {
     SettingCheck,
+    VlModal,
   },
   data() {
     return {
+      isFirefox,
       store,
       exporting: false,
       items: [],
@@ -67,7 +79,7 @@ export default {
       this.exporting = true;
       Promise.resolve(exportData(this.selectedIds))
       .then(downloadBlob)
-      .catch((err) => {
+      .catch(err => {
         console.error(err);
       })
       .then(() => {
@@ -81,15 +93,15 @@ export default {
 };
 
 function getWriter() {
-  return new Promise((resolve) => {
-    zip.createWriter(new zip.BlobWriter(), (writer) => {
+  return new Promise(resolve => {
+    zip.createWriter(new zip.BlobWriter(), writer => {
       resolve(writer);
     });
   });
 }
 
 function addFile(writer, file) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     writer.add(file.name, new zip.TextReader(file.content), () => {
       resolve(writer);
     });
@@ -115,7 +127,7 @@ function downloadBlob(blob) {
   if (isFirefox) {
     const reader = new FileReader();
     reader.onload = () => {
-      download(reader.result);
+      store.ffUrl = reader.result;
     };
     reader.readAsDataURL(blob);
   } else {
@@ -176,8 +188,8 @@ function exportData(selectedIds) {
   .then(files => files.reduce((result, file) => (
     result.then(writer => addFile(writer, file))
   ), getWriter()))
-  .then(writer => new Promise((resolve) => {
-    writer.close((blob) => {
+  .then(writer => new Promise(resolve => {
+    writer.close(blob => {
       resolve(blob);
     });
   }));
@@ -210,5 +222,8 @@ function exportData(selectedIds) {
       color: white;
     }
   }
+}
+.export-modal {
+  width: 13rem;
 }
 </style>

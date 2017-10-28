@@ -1,4 +1,4 @@
-import { getUniqId, bindEvents, Promise, attachFunction, console, throttle } from '../utils';
+import { getUniqId, bindEvents, Promise, attachFunction, console } from '../utils';
 import { includes, forEach, map, utf8decode } from './helpers';
 import bridge from './bridge';
 import { onRequestCreate, onRequestStart, onRequestCallback } from './requests';
@@ -16,7 +16,8 @@ export default function initialize(webId, contentId, props) {
   bridge.post = bindEvents(webId, contentId, onHandle);
   document.addEventListener('DOMContentLoaded', () => {
     state = 1;
-    bridge.load();
+    // Load scripts after being handled by listeners in web page
+    Promise.resolve().then(bridge.load);
   }, false);
   bridge.checkLoad();
 }
@@ -24,6 +25,7 @@ export default function initialize(webId, contentId, props) {
 const store = {
   commands: {},
   values: {},
+  callbacks: {},
 };
 
 const handlers = {
@@ -32,11 +34,18 @@ const handlers = {
     const func = store.commands[data];
     if (func) func();
   },
+  Callback({ callbackId, payload }) {
+    const func = store.callbacks[callbackId];
+    if (func) func(payload);
+  },
   GotRequestId: onRequestStart,
   HttpRequested: onRequestCallback,
   TabClosed: onTabClosed,
-  UpdateValues({ id, values }) {
-    if (store.values[id]) store.values[id] = values;
+  UpdatedValues(updates) {
+    Object.keys(updates)
+    .forEach(id => {
+      if (store.values[id]) store.values[id] = updates[id];
+    });
   },
   NotificationClicked: onNotificationClicked,
   NotificationClosed: onNotificationClosed,
@@ -44,6 +53,15 @@ const handlers = {
     if (bridge.onScriptChecked) bridge.onScriptChecked(data);
   },
 };
+
+function registerCallback(callback) {
+  const callbackId = getUniqId('VMcb');
+  store.callbacks[callbackId] = payload => {
+    callback(payload);
+    delete store.callbacks[callbackId];
+  };
+  return callbackId;
+}
 
 function onHandle(obj) {
   const handle = handlers[obj.cmd];
@@ -57,7 +75,7 @@ function onLoadScripts(data) {
   bridge.version = data.version;
   if (includes([
     'greasyfork.org',
-  ], location.host)) {
+  ], window.location.host)) {
     exposeVM();
   }
   // reset load and checkLoad
@@ -114,13 +132,13 @@ function onLoadScripts(data) {
     const name = script.custom.name || script.meta.name || script.props.id;
     const args = map(argNames, key => wrapper[key]);
     const thisObj = wrapper.window || wrapper;
-    const id = `VMin${getUniqId()}`;
-    const callbackId = `VMcb${getUniqId()}`;
-    attachFunction(callbackId, () => {
+    const id = getUniqId('VMin');
+    const fnId = getUniqId('VMfn');
+    attachFunction(fnId, () => {
       const func = window[id];
       if (func) runCode(name, func, args, thisObj);
     });
-    bridge.post({ cmd: 'Inject', data: [id, argNames, codeConcat, callbackId] });
+    bridge.post({ cmd: 'Inject', data: [id, argNames, codeConcat, fnId] });
   }
   function run(list) {
     while (list.length) buildCode(list.shift());
@@ -154,7 +172,6 @@ function wrapGM(script, code, cache) {
     '': val => val,
   };
   const pathMap = script.custom.pathMap || {};
-  const throttledDumpValues = throttle(dumpValues, 200);
   const matches = code.match(/\/\/\s+==UserScript==\s+([\s\S]*?)\/\/\s+==\/UserScript==\s/);
   const metaStr = matches ? matches[1] : '';
   const gmFunctions = {
@@ -189,7 +206,7 @@ function wrapGM(script, code, cache) {
       value(key) {
         const value = loadValues();
         delete value[key];
-        throttledDumpValues();
+        dumpValue(key);
       },
     },
     GM_getValue: {
@@ -203,7 +220,7 @@ function wrapGM(script, code, cache) {
           try {
             val = handle(val);
           } catch (e) {
-            console.warn(e);
+            if (process.env.DEBUG) console.warn(e);
           }
           return val;
         }
@@ -222,7 +239,7 @@ function wrapGM(script, code, cache) {
         const raw = type + handle(val);
         const value = loadValues();
         value[key] = raw;
-        throttledDumpValues();
+        dumpValue(key, raw);
       },
     },
     GM_getResourceText: {
@@ -260,8 +277,21 @@ function wrapGM(script, code, cache) {
       },
     },
     GM_addStyle: {
-      value(data) {
-        bridge.post({ cmd: 'AddStyle', data });
+      value(css) {
+        const callbacks = [];
+        let el = false;
+        const callbackId = registerCallback(styleId => {
+          el = document.getElementById(styleId);
+          callbacks.splice().forEach(callback => callback(el));
+        });
+        bridge.post({ cmd: 'AddStyle', data: { css, callbackId } });
+        // Mock a Promise without the need for polyfill
+        return {
+          then(callback) {
+            if (el !== false) callback(el);
+            else callbacks.push(callback);
+          },
+        };
       },
     },
     GM_log: {
@@ -328,12 +358,12 @@ function wrapGM(script, code, cache) {
     Object.defineProperty(obj, name, prop);
     if (typeof obj[name] === 'function') obj[name].toString = propertyToString;
   }
-  function dumpValues() {
+  function dumpValue(key, value) {
     bridge.post({
-      cmd: 'SetValue',
+      cmd: 'UpdateValue',
       data: {
-        where: { id: script.props.id },
-        values: loadValues(),
+        id: script.props.id,
+        update: { key, value },
       },
     });
   }
